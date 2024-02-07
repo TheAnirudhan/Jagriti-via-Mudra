@@ -76,17 +76,23 @@ class VideoProcessor:
     
     def process_video_batch(self, video_paths):
         # Initialize tqdm with the total number of videos
+        self.keypoints_batch = []
         skipped_id = []
         with tqdm(total=len(video_paths), desc='Processing Videos') as pbar:
 
             for i, video_path in enumerate(video_paths):
-
                 keypoints = self.process_video(video_path)
-                if keypoints.shape[1] != self.max_frames:
+                try:
+                    if keypoints.shape[1] != self.max_frames:
+                        skipped_id.append(i)
+                        pbar.update(1)
+                        pbar.set_postfix(skipped=f"Too short! (Skipped: {len(i)})")
+                        continue
+                except:
                     skipped_id.append(i)
                     pbar.update(1)
+                    pbar.set_postfix(skipped=f"Too short! (Skipped: {len(skipped_id)})")
                     continue
-                
                 self.keypoints_batch.append(keypoints.tolist())
 
                 # Update the progress bar

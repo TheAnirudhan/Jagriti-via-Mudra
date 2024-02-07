@@ -1,0 +1,4 @@
+models/yolov8x-pose-p6.pt
+models/yolov8x-pose.pt
+models/yolov8n-pose.pt
+models/yolov8s-pose.pt
