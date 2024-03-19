@@ -5,8 +5,9 @@ import json
 from tqdm import tqdm
 
 class VideoProcessor:
-    def __init__(self, model, batch_size=20, max_frames=100, max_persons = 10):
+    def __init__(self, model, batch_size=20, max_frames=100, max_persons = 10, img_sz = 960, show_stream = True):
         self.model = model
+        self.img_sz = img_sz
         self.batch_size = batch_size
         self.output = None
         self.orig_shape = None
@@ -14,6 +15,8 @@ class VideoProcessor:
         self.keypoints_batch = []
         self.max_persons = max_persons
         self.max_frames = max_frames
+        self.show_stream = show_stream
+
 
     def _convert_result_to_string(self, result):
         output = '['
@@ -22,11 +25,11 @@ class VideoProcessor:
                 break
             output += r.tojson() + ','
         output = output[:-1] + ']'
-        cv2.destroyAllWindows()
+        if self.show_stream:
+            cv2.destroyAllWindows()
         return eval(output), r.orig_shape
 
 
-    
     def _extract_keypoints(self, data):
         
         d = {}
@@ -58,22 +61,23 @@ class VideoProcessor:
             # print("Running inference:", end='\t')
 
             result = self.model.track(
-                video_path, show=True, save=False, stream=True,
-                imgsz=960, device='0', verbose=False,
+                video_path, show=self.show_stream, save=False, stream=True,
+                imgsz=self.img_sz, device='0', verbose=False,
                 tracker="bytetrack.yaml", conf=0.5, iou=0.5
             )
 
-            data, self.orig_shape = self._convert_result_to_string(result)
+            self.data, self.orig_shape = self._convert_result_to_string(result)
             
             
-            self._extract_keypoints(data)
+            self._extract_keypoints(self.data)
             
             return self.keypoints
 
         except Exception as e:
-            # print(f"Error processing video: {str(e)}")
+            print(f"Error processing video: {str(e)}")
             return None
     
+
     def process_video_batch(self, video_paths):
         # Initialize tqdm with the total number of videos
         self.keypoints_batch = []
@@ -100,9 +104,29 @@ class VideoProcessor:
 
         return self.keypoints_batch, skipped_id
             
+    def process_image(self, image):
+        try:
+            # print("Running inference:", end='\t')
 
+            result = self.model.track(
+                image, show=self.show_stream,
+                imgsz=self.img_sz, device='0', verbose=False,
+                tracker="bytetrack.yaml", conf=0.5, iou=0.5
+            )
+
+            self.data, self.orig_shape = self._convert_result_to_string(result)
+            
+            
+            self._extract_keypoints(self.data)
+            
+            return self.keypoints
+
+        except Exception as e:
+            print(f"Error processing Image: {str(e)}")
+            return None
+        
 # Example usage:
-# video_path = 'examples/videos/V75.mp4'
+# video_path = 'examples/videos/nv143.MOV'
 
 # model = YOLO('models/yolov8x-pose-p6.pt') 
 # video_processor = VideoProcessor(model)
