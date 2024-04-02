@@ -111,7 +111,7 @@ class VideoProcessor:
             result = self.model.track(
                 image, show=self.show_stream,
                 imgsz=self.img_sz, device='0', verbose=False,
-                tracker="bytetrack.yaml", conf=0.5, iou=0.5
+                tracker="bytetrack.yaml", conf=0.5, iou=0.5, persistant=True
             )
 
             self.data, self.orig_shape = self._convert_result_to_string(result)
